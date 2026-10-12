@@ -1,7 +1,25 @@
 'use strict';
 
 (() => {
-  const DATA_KEY = 'KSS_FINAL_DATA.json';
+  const storage = window.KSSStorage;
+  const actionButtons = ['saveRecord', 'exportCSV', 'clearHistory'].map(id => document.getElementById(id));
+  let busy = false;
+  let tableLoad = 0;
+  let channel;
+  try {
+    if ('BroadcastChannel' in window) channel = new BroadcastChannel('kss-records');
+  } catch (error) {
+    // Focus and visibility changes also refresh the history.
+  }
+
+  function setBusy(value) {
+    busy = value;
+    actionButtons.forEach(button => { button.disabled = value; });
+  }
+
+  function notifyChange() {
+    try { channel?.postMessage('changed'); } catch (error) {}
+  }
   const descriptions = [
     '非常にはっきり目覚めている',
     'とても目覚めている',
@@ -23,23 +41,6 @@
   function message(text, error = false) {
     status.textContent = text;
     status.classList.toggle('error', error);
-  }
-
-  function getData() {
-    const raw = localStorage.getItem(DATA_KEY);
-    if (raw === null) return [];
-    const data = JSON.parse(raw);
-    if (!Array.isArray(data) || !data.every(record => record &&
-      typeof record.ID === 'string' && typeof record.DateTime === 'string' &&
-      typeof record.Session === 'string' && Number.isInteger(record.KSS) &&
-      record.KSS >= 1 && record.KSS <= 9)) {
-      throw new Error('Invalid saved records');
-    }
-    return data;
-  }
-
-  function setData(data) {
-    localStorage.setItem(DATA_KEY, JSON.stringify(data));
   }
 
   function renderTable(data) {
@@ -64,11 +65,15 @@
     });
   }
 
-  function loadTable() {
+  async function loadTable() {
+    const load = ++tableLoad;
     try {
-      renderTable(getData());
+      const data = await storage.getAll();
+      if (load === tableLoad) renderTable(data);
+      return true;
     } catch (error) {
       message('保存済みの記録を読み込めませんでした。ブラウザの保存設定をご確認ください。', true);
+      return false;
     }
   }
 
@@ -96,8 +101,9 @@
     grid.appendChild(button);
   });
 
-  document.getElementById('questionnaire').addEventListener('submit', event => {
+  document.getElementById('questionnaire').addEventListener('submit', async event => {
     event.preventDefault();
+    if (busy) return;
     const missing = [];
     if (!sid.value.trim()) missing.push('被験者ID');
     if (selectedKSS === null) missing.push('KSS');
@@ -115,14 +121,19 @@
       Session: session.value,
       KSS: selectedKSS
     };
+    setBusy(true);
     try {
-      const data = getData();
-      data.push(record);
-      setData(data);
-      renderTable(data);
-      message(`保存しました。\n被験者ID: ${record.ID}\n日時: ${record.DateTime}\n今の状況: ${record.Session}\nKSS: ${record.KSS}`);
+      await storage.add(record);
+      notifyChange();
+      if (await loadTable()) {
+        message(`保存しました。\n被験者ID: ${record.ID}\n日時: ${record.DateTime}\n今の状況: ${record.Session}\nKSS: ${record.KSS}`);
+      } else {
+        message('記録は保存しましたが、一覧を更新できませんでした。ページを再読み込みしてください。', true);
+      }
     } catch (error) {
       message('保存できませんでした。ブラウザの保存設定や空き容量をご確認ください。', true);
+    } finally {
+      setBusy(false);
     }
   });
 
@@ -131,10 +142,12 @@
     return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
   }
 
-  document.getElementById('exportCSV').addEventListener('click', () => {
+  document.getElementById('exportCSV').addEventListener('click', async () => {
+    if (busy) return;
+    setBusy(true);
     let url;
     try {
-      const data = getData();
+      const data = await storage.getAll();
       const rows = [['ID', 'DateTime', 'Session', 'KSS'],
         ...data.map(record => [record.ID, record.DateTime, record.Session, record.KSS])];
       const csv = '\ufeff' + rows.map(row => row.map(csvEscape).join(',')).join('\r\n');
@@ -149,25 +162,39 @@
     } catch (error) {
       message('CSVを出力できませんでした。ブラウザの保存設定をご確認ください。', true);
     } finally {
+      setBusy(false);
       if (url) setTimeout(() => URL.revokeObjectURL(url), 10000);
     }
   });
 
-  document.getElementById('clearHistory').addEventListener('click', () => {
+  document.getElementById('clearHistory').addEventListener('click', async () => {
+    if (busy) return;
     if (!window.confirm('保存済みの履歴をすべて消去します。この操作は取り消せません。消去しますか？')) return;
+    setBusy(true);
     try {
-      setData([]);
-      renderTable([]);
-      message('履歴を消去しました。');
+      await storage.clear();
+      notifyChange();
+      if (await loadTable()) message('履歴を消去しました。');
     } catch (error) {
-      message('履歴を消去できませんでした。もう一度お試しください。', true);
+      if (error.message === 'Legacy backup could not be cleared') {
+        notifyChange();
+        await loadTable();
+        message('履歴は消去しましたが、移行前のバックアップを削除できませんでした。ブラウザの保存設定をご確認ください。', true);
+      } else {
+        message('履歴を消去できませんでした。もう一度お試しください。', true);
+      }
+    } finally {
+      setBusy(false);
     }
   });
 
-  window.addEventListener('storage', event => {
-    if (event.key === DATA_KEY || event.key === null) loadTable();
+  if (channel) channel.onmessage = () => loadTable();
+  window.addEventListener('focus', () => loadTable());
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') loadTable();
   });
-  loadTable();
+  setBusy(true);
+  loadTable().finally(() => setBusy(false));
 
   if ('serviceWorker' in navigator && window.isSecureContext && location.protocol !== 'file:') {
     navigator.serviceWorker.register('./sw.js').then(() => navigator.serviceWorker.ready).then(() => {

@@ -1,7 +1,7 @@
 'use strict';
 
-const CACHE_NAME = 'kss-questionnaire-web-v1';
-const FILES = ['./', './index.html', './style.css', './script.js'];
+const CACHE_NAME = 'kss-questionnaire-web-v2';
+const FILES = ['./', './index.html', './style.css', './storage.js', './script.js'];
 
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(FILES)).then(() => self.skipWaiting()));
