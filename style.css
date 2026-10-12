@@ -1,0 +1,28 @@
+:root { color-scheme: light; }
+body { font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; max-width: 900px; margin: auto; padding: 15px; background: #f3f6fa; color: #111; }
+.card { background: #fff; border-radius: 14px; padding: 16px; margin-bottom: 14px; box-shadow: 0 2px 8px rgba(0,0,0,.1); }
+h1,h2 { text-align: center; }
+label,legend { font-weight: bold; display: block; margin-top: 10px; line-height: 1.6; }
+fieldset { border: 0; padding: 0; margin: 12px 0; min-width: 0; }
+input,select,button { padding: 12px; font: inherit; font-size: 16px; width: 100%; box-sizing: border-box; }
+input,select { border: 1px solid #aaa; border-radius: 8px; background: #fff; color: #111; margin-top: 6px; }
+button { cursor: pointer; }
+.grid { display: grid; grid-template-columns: minmax(0,1fr); gap: 8px; margin-top: 10px; }
+.kbtn { display: flex; align-items: center; gap: 12px; padding: 14px 16px; font-size: 16px; line-height: 1.5; text-align: left; color: #111; border: 1px solid #bbb; border-radius: 10px; background: #eef2ff; }
+.kbtn-number { flex: 0 0 2em; text-align: center; font-weight: bold; border: 1px solid currentColor; border-radius: 5px; }
+.kbtn-text { min-width: 0; overflow-wrap: anywhere; }
+:focus-visible { outline: 3px solid #1e40af; outline-offset: 3px; }
+.kbtn.selected { background: #2563eb; color: #fff; }
+.action { background: #2563eb; color: #fff; border: none; border-radius: 10px; margin-top: 10px; }
+.export { background: #15803d; color: #fff; border: none; border-radius: 10px; margin-top: 10px; }
+.clear { background: #dc2626; color: #fff; border: none; border-radius: 10px; margin-bottom: 10px; }
+button:disabled { opacity: .5; cursor: default; }
+.small { font-size: 13px; color: #666; line-height: 1.6; }
+#status { white-space: pre-line; font-size: 14px; line-height: 1.6; }
+#status:empty { display: none; }
+#status.error { color: #b91c1c; }
+.table-scroll { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th,td { border: 1px solid #ccc; padding: 8px; font-size: 12px; text-align: left; overflow-wrap: anywhere; }
+th { background: #f3f6fa; }
+@media (max-width: 480px) { body { padding: 10px; } .card { padding: 12px; } .kbtn { padding: 12px; } th,td { padding: 6px; } }
