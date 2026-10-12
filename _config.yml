@@ -1,0 +1,3 @@
+theme: jekyll-theme-minimal
+title: KSS Recorder
+description: A simple tool to record your KSS style guide and generate a static site for it.
