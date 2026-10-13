@@ -15,7 +15,9 @@ button { cursor: pointer; }
 .kbtn.selected { background: #2563eb; color: #fff; }
 .action { background: #2563eb; color: #fff; border: none; border-radius: 10px; margin-top: 10px; }
 .export { background: #15803d; color: #fff; border: none; border-radius: 10px; margin-top: 10px; }
-.clear { background: #dc2626; color: #fff; border: none; border-radius: 10px; margin-bottom: 10px; }
+.clear { background: #dc2626; color: #fff; border: none; border-radius: 10px; margin-top: 10px; margin-bottom: 10px; }
+nav { text-align: center; margin: 16px 0; }
+nav a { color: #1e40af; }
 button:disabled { opacity: .5; cursor: default; }
 .small { font-size: 13px; color: #666; line-height: 1.6; }
 #status { white-space: pre-line; font-size: 14px; line-height: 1.6; }

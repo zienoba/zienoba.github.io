@@ -8,7 +8,7 @@ const { IDBFactory } = require('fake-indexeddb');
 const root = path.join(__dirname, '..');
 class Element {
   constructor() {
-    this.children = []; this.events = {}; this.value = ''; this.textContent = '';
+    this.children = []; this.events = {}; this.value = ''; this.textContent = ''; this.disabled = false;
     this.classList = { add() {}, remove() {}, toggle() {} };
   }
   append(...nodes) { this.children.push(...nodes); }
@@ -22,9 +22,9 @@ class Element {
   click() { return this.events.click?.(); }
   remove() {}
 }
-function boot() {
-  const ids = Object.fromEntries(['saveRecord', 'kssgrid', 'tbody', 'status', 'sid', 'session',
-    'questionnaire', 'exportCSV', 'clearHistory', 'offlineNote'].map(id => [id, new Element()]));
+function boot(page = 'index', indexedDB = new IDBFactory()) {
+  const html = fs.readFileSync(path.join(root, `${page}.html`), 'utf8');
+  const ids = Object.fromEntries([...html.matchAll(/id="([^"]+)"/g)].map(match => [match[1], new Element()]));
   const state = { ids, confirm: true, blobs: [], notices: [], windowEvents: {} };
   const context = vm.createContext({
     window: { addEventListener: (name, fn) => { state.windowEvents[name] = fn; },
@@ -32,24 +32,26 @@ function boot() {
     BroadcastChannel: class { constructor() { state.channel = this; } postMessage(value) { state.notices.push(value); } },
     document: { getElementById: id => ids[id], createElement: () => new Element(),
       body: new Element(), addEventListener() {} },
-    indexedDB: new IDBFactory(), localStorage: { getItem: () => null, removeItem() {} },
+    indexedDB, localStorage: { getItem: () => null, removeItem() {} },
     location: { protocol: 'file:' }, navigator: {}, Blob,
     URL: { createObjectURL: blob => { state.blobs.push(blob); return 'blob:test'; }, revokeObjectURL() {} },
     setTimeout: () => {}
   });
-  for (const file of ['storage.js', 'script.js']) vm.runInContext(fs.readFileSync(path.join(root, file), 'utf8'), context);
+  for (const file of ['storage.js', page === 'index' ? 'script.js' : 'admin.js', 'offline.js']) vm.runInContext(fs.readFileSync(path.join(root, file), 'utf8'), context);
   state.context = context;
   return state;
 }
 async function waitReady(state) {
-  for (let i = 0; i < 100 && state.ids.saveRecord.disabled; i++) await new Promise(resolve => setImmediate(resolve));
-  assert.equal(state.ids.saveRecord.disabled, false);
+  for (let i = 0; i < 100 && state.ids.exportCSV.disabled; i++) await new Promise(resolve => setImmediate(resolve));
+  assert.equal(state.ids.exportCSV.disabled, false);
 }
-test('UI validates input, saves once during double submission, exports escaped CSV and clears', async () => {
-  const state = boot();
+test('questionnaire saves and administrator page lists, exports and clears shared records', async () => {
+  const db = new IDBFactory();
+  const state = boot('index', db);
   const e = state.ids;
-  assert.equal(e.saveRecord.disabled, true);
-  await waitReady(state);
+  assert.equal(e.tbody, undefined);
+  assert.equal(e.exportCSV, undefined);
+  assert.equal(e.clearHistory, undefined);
   const submit = () => e.questionnaire.events.submit({ preventDefault() {} });
   await submit();
   assert.match(e.status.textContent, /未入力/);
@@ -60,21 +62,25 @@ test('UI validates input, saves once during double submission, exports escaped C
   await submit(); await first;
   assert.equal((await state.context.window.KSSStorage.getAll()).length, 1);
   assert.match(e.status.textContent, /保存しました/);
-  assert.equal(e.tbody.children[0].children[0].textContent, e.sid.value);
   assert.equal(state.notices.length, 1);
-  await e.exportCSV.click();
-  const bytes = new Uint8Array(await state.blobs[0].arrayBuffer());
+  const admin = boot('admin', db);
+  await waitReady(admin);
+  const a = admin.ids;
+  assert.equal(a.questionnaire, undefined);
+  assert.equal(a.tbody.children[0].children[0].textContent, e.sid.value);
+  await a.exportCSV.click();
+  const bytes = new Uint8Array(await admin.blobs[0].arrayBuffer());
   assert.deepEqual(Array.from(bytes.slice(0, 3)), [239, 187, 191]);
-  assert.match(await state.blobs[0].text(), /"001,""test"""/);
-  assert.match(await state.blobs[0].text(), /ID,DateTime,Session,KSS/);
-  state.confirm = false; await e.clearHistory.click();
+  assert.match(await admin.blobs[0].text(), /"001,""test"""/);
+  assert.match(await admin.blobs[0].text(), /ID,DateTime,Session,KSS/);
+  admin.confirm = false; await a.clearHistory.click();
   assert.equal((await state.context.window.KSSStorage.getAll()).length, 1);
-  state.confirm = true; await e.clearHistory.click();
+  admin.confirm = true; await a.clearHistory.click();
   assert.equal((await state.context.window.KSSStorage.getAll()).length, 0);
-  assert.match(e.status.textContent, /履歴を消去しました/);
+  assert.match(a.status.textContent, /履歴を消去しました/);
   await state.context.window.KSSStorage.add({ ID: 'other-tab', DateTime: 'date', Session: '夕食後', KSS: 1 });
-  await state.channel.onmessage();
-  assert.equal(e.tbody.children[0].children[0].textContent, 'other-tab');
+  await admin.channel.onmessage();
+  assert.equal(a.tbody.children[0].children[0].textContent, 'other-tab');
   state.context.window.KSSStorage.add = async () => { throw new Error('Quota'); };
   await submit();
   assert.match(e.status.textContent, /保存できません/);
@@ -82,8 +88,11 @@ test('UI validates input, saves once during double submission, exports escaped C
 });
 
 test('offline cache includes the new storage script and HTML loads it before UI', async () => {
-  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-  assert.ok(html.indexOf('src="storage.js"') < html.indexOf('src="script.js"'));
+  for (const [page, script] of [['index', 'script'], ['admin', 'admin']]) {
+    const html = fs.readFileSync(path.join(root, `${page}.html`), 'utf8');
+    assert.ok(html.indexOf('src="storage.js"') < html.indexOf(`src="${script}.js"`));
+    assert.ok(html.includes('src="offline.js"'));
+  }
   const events = {};
   let assets;
   vm.runInNewContext(fs.readFileSync(path.join(root, 'sw.js'), 'utf8'), {
@@ -93,6 +102,6 @@ test('offline cache includes the new storage script and HTML loads it before UI'
   let done;
   events.install({ waitUntil: promise => { done = promise; } });
   await done;
-  assert.ok(assets.includes('./storage.js'));
+  for (const asset of ['./storage.js', './admin.html', './admin.js', './offline.js']) assert.ok(assets.includes(asset));
   for (const file of assets) assert.ok(fs.existsSync(path.join(root, file)));
 });

@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="style.css">
   <script src="storage.js" defer></script>
   <script src="script.js" defer></script>
+  <script src="offline.js" defer></script>
 </head>
 <body>
 <main>
@@ -27,21 +28,11 @@
       <option>夕食後</option>
     </select>
     <button class="action" id="saveRecord" type="submit">保存</button>
-    <button class="export" id="exportCSV" type="button">CSV出力</button>
     <p class="small">日時は自動記録されます。記録はこのブラウザに保存されます。別の端末・ブラウザとは共有されません。</p>
     <p class="small" id="offlineNote">ダウンロードしたファイルからはオフラインでも利用できます。</p>
     <p id="status" role="status" aria-live="polite"></p>
   </form>
-  <section class="card" aria-labelledby="historyTitle">
-    <h2 id="historyTitle">記録一覧</h2>
-    <button type="button" class="clear" id="clearHistory">履歴を消去</button>
-    <div class="table-scroll" tabindex="0" role="region" aria-label="保存済みの記録">
-      <table>
-        <thead><tr><th scope="col">ID</th><th scope="col">DateTime</th><th scope="col">Session</th><th scope="col">KSS</th></tr></thead>
-        <tbody id="tbody"></tbody>
-      </table>
-    </div>
-  </section>
+  <nav aria-label="画面切り替え"><a href="admin.html">管理者画面へ</a></nav>
   <noscript><p class="card">この質問票を使うにはJavaScriptを有効にしてください。</p></noscript>
 </main>
 </body>
