@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'kss-questionnaire-web-v3';
+const CACHE_NAME = 'kss-questionnaire-web-v4';
 const FILES = ['./', './index.html', './style.css', './storage.js', './script.js', './admin.html', './admin.js', './offline.js'];
 
 self.addEventListener('install', event => {

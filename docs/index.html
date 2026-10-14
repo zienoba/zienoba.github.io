@@ -10,26 +10,30 @@
   <script src="script.js" defer></script>
   <script src="offline.js" defer></script>
 </head>
-<body>
+<body class="questionnaire-page">
 <main>
   <nav class="top-nav" aria-label="画面切り替え"><a href="admin.html">管理者画面</a></nav>
   <h1>KSS 質問票</h1>
   <form class="card" id="questionnaire" novalidate>
-    <label for="sid">被験者ID</label>
-    <input id="sid" name="sid" placeholder="例: 001" autocomplete="off" required>
+    <div class="participant-field">
+      <label for="sid">被験者ID</label>
+      <input id="sid" name="sid" placeholder="例: 001" autocomplete="off" required>
+    </div>
     <fieldset>
       <legend>「いま、この瞬間のあなたの眠気の状態」に最も近いものを、以下の1から9の中から1つだけ選んでください。</legend>
       <div class="grid" id="kssgrid"></div>
     </fieldset>
-    <label for="session">今の状況を選んでください</label>
-    <select id="session" name="session" required>
-      <option value="" disabled selected>選択してください</option>
-      <option>夜間睡眠からの起床後</option>
-      <option>昼寝からの起床後</option>
-      <option>夕食後</option>
-    </select>
-    <button class="action" id="saveRecord" type="submit">保存</button>
-    <p id="status" role="status" aria-live="polite"></p>
+    <div class="save-panel">
+      <label for="session">今の状況を選んでください</label>
+      <select id="session" name="session" required>
+        <option value="" disabled selected>選択してください</option>
+        <option>夜間睡眠からの起床後</option>
+        <option>昼寝からの起床後</option>
+        <option>夕食後</option>
+      </select>
+      <button class="action" id="saveRecord" type="submit">保存</button>
+      <p id="status" role="status" aria-live="polite"></p>
+    </div>
   </form>
   <noscript><p class="card">この質問票を使うにはJavaScriptを有効にしてください。</p></noscript>
 </main>
