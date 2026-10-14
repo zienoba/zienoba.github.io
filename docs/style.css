@@ -67,7 +67,7 @@ th { background: #f3f6fa; }
   .questionnaire-page fieldset { margin: 8px 0; }
   .questionnaire-page input, .questionnaire-page select, .questionnaire-page .action { padding: 8px; min-height: 38px; }
   .questionnaire-page .grid { gap: 4px; margin-top: 6px; }
-  .questionnaire-page .kbtn { min-height: 34px; padding: 4px 8px; gap: 8px; line-height: 1.35; }
+  .questionnaire-page .kbtn { min-height: 44px; padding: 4px 8px; gap: 8px; line-height: 1.35; }
   .questionnaire-page .action { margin-top: 8px; }
   .questionnaire-page #status { min-height: 8em; margin: 8px 0 0; }
   .questionnaire-page #status:empty { display: block; }
