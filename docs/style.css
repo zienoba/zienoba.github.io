@@ -20,6 +20,7 @@ nav { text-align: center; margin: 16px 0; }
 nav a { color: #1e40af; }
 .top-nav { display: flex; justify-content: flex-end; margin: 0 0 12px; }
 .top-nav a { display: inline-block; padding: 10px 14px; border: 1px solid #1e40af; border-radius: 8px; background: #fff; text-decoration: none; }
+.top-nav svg { display: block; }
 button:disabled { opacity: .5; cursor: default; }
 .small { font-size: 13px; color: #666; line-height: 1.6; }
 #status { white-space: pre-line; font-size: 14px; line-height: 1.6; }
